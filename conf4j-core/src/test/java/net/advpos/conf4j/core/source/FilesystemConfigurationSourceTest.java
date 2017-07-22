@@ -11,15 +11,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class FilesystemConfigurationSourceTest {
 
     @Test
-    public void testConfigLoaded() throws Exception {
+    public void testConfigLoadedWithHoconFile() throws Exception {
         String filePath = getClass().getResource("test.conf").getPath();
-        FilesystemConfigurationSource source = FilesystemConfigurationSource.builder()
-                .withFilePath(filePath)
-                .build();
+        testConfigLoaded(filePath);
+    }
 
-        Config config = source.getConfig();
-        assertThat(config).isNotNull();
-        assertThat(config.getString("message")).isEqualTo("config-loaded-successfully");
+    @Test
+    public void testConfigLoadedWithPropertiesFile() throws Exception {
+        String filePath = getClass().getResource("test.properties").getPath();
+        testConfigLoaded(filePath);
+    }
+
+    @Test
+    public void testConfigLoadedWithJsonFile() throws Exception {
+        String filePath = getClass().getResource("test.json").getPath();
+        testConfigLoaded(filePath);
     }
 
     @Test
@@ -41,6 +47,16 @@ public class FilesystemConfigurationSourceTest {
         Config config = source.getConfig();
         assertThat(config).isNotNull();
         assertThat(config).isEqualTo(ConfigFactory.empty());
+    }
+
+    private void testConfigLoaded(String filePath) {
+        FilesystemConfigurationSource source = FilesystemConfigurationSource.builder()
+                .withFilePath(filePath)
+                .build();
+
+        Config config = source.getConfig();
+        assertThat(config).isNotNull();
+        assertThat(config.getString("message")).isEqualTo("config-loaded-successfully");
     }
 
 }

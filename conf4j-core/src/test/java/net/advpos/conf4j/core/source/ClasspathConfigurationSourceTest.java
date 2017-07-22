@@ -11,14 +11,21 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class ClasspathConfigurationSourceTest {
 
     @Test
-    public void testConfigLoaded() throws Exception {
-        ClasspathConfigurationSource source = ClasspathConfigurationSource.builder()
-                .withResourcePath("net/advpos/conf4j/core/source/test.conf")
-                .build();
+    public void testConfigLoadedWithHoconFile() throws Exception {
+        String resourcePath = "net/advpos/conf4j/core/source/test.conf";
+        testConfigLoaded(resourcePath);
+    }
 
-        Config config = source.getConfig();
-        assertThat(config).isNotNull();
-        assertThat(config.getString("message")).isEqualTo("config-loaded-successfully");
+    @Test
+    public void testConfigLoadedWithPropertiesFile() throws Exception {
+        String resourcePath = "net/advpos/conf4j/core/source/test.properties";
+        testConfigLoaded(resourcePath);
+    }
+
+    @Test
+    public void testConfigLoadedWithJsonFile() throws Exception {
+        String resourcePath = "net/advpos/conf4j/core/source/test.json";
+        testConfigLoaded(resourcePath);
     }
 
     @Test
@@ -40,6 +47,16 @@ public class ClasspathConfigurationSourceTest {
         Config config = source.getConfig();
         assertThat(config).isNotNull();
         assertThat(config).isEqualTo(ConfigFactory.empty());
+    }
+
+    private void testConfigLoaded(String resourcePath) throws Exception {
+        ClasspathConfigurationSource source = ClasspathConfigurationSource.builder()
+                .withResourcePath(resourcePath)
+                .build();
+
+        Config config = source.getConfig();
+        assertThat(config).isNotNull();
+        assertThat(config.getString("message")).isEqualTo("config-loaded-successfully");
     }
 
 }
