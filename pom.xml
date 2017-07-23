@@ -38,6 +38,7 @@
         <module>conf4j-all</module>
         <module>conf4j-consul</module>
         <module>conf4j-core</module>
+        <module>conf4j-etcd</module>
     </modules>
 
     <build>
