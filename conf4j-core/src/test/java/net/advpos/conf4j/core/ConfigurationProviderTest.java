@@ -2,6 +2,9 @@ package net.advpos.conf4j.core;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ImmutableMap;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import net.advpos.conf4j.core.source.FilesystemConfigurationSource;
 import org.junit.Test;
 
@@ -15,6 +18,12 @@ public class ConfigurationProviderTest {
         ConfigurationProvider<TestConfiguration> provider = ConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
+
+        Config config = ConfigFactory.parseMap(ImmutableMap.of(
+                "libraryName", "conf4j", "numberOfDaysInWeek", 7
+        ));
+
+        assertThat(provider.getConfig()).isEqualTo(config);
 
         TestConfiguration testConfiguration = provider.get();
         assertThat(testConfiguration).isNotNull();

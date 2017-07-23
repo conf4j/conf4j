@@ -18,7 +18,7 @@ public class ConfigurationProvider<T> {
 
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
-    private final AtomicReference<T> configurationCache = new AtomicReference<>();
+    private final AtomicReference<ConfigHolder<T>> configurationCache = new AtomicReference<>();
 
     private ConfigurationProvider(Class<? extends T> configurationClass, ConfigurationSource configurationSource) {
         this.configurationClass = requireNonNull(configurationClass);
@@ -26,10 +26,14 @@ public class ConfigurationProvider<T> {
     }
 
     public T get() {
-        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded);
+        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded).getConfiguration();
     }
 
-    private T buildConfigObjectIfNeeded(T currentConfig) {
+    public Config getConfig() {
+        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded).getTypeSafeConfig();
+    }
+
+    private ConfigHolder<T> buildConfigObjectIfNeeded(ConfigHolder<T> currentConfig) {
         if (currentConfig != null) return currentConfig;
 
         Config config = configurationSource.getConfig();
@@ -37,7 +41,8 @@ public class ConfigurationProvider<T> {
 
         String configAsJson = config.root().render(ConfigRenderOptions.concise());
         try {
-            return mapper.readValue(configAsJson, configurationClass);
+            T configuration = mapper.readValue(configAsJson, configurationClass);
+            return new ConfigHolder<>(config, configuration);
         } catch (IOException e) {
             throw new IllegalStateException("Failed to create configuration object", e);
         }
@@ -80,6 +85,26 @@ public class ConfigurationProvider<T> {
                     .withSource(this.configurationSource)
                     .withFallback(fallbackSource)
                     .build();
+        }
+
+    }
+
+    private static class ConfigHolder<T> {
+
+        private Config typeSafeConfig;
+        private T configuration;
+
+        ConfigHolder(Config typeSafeConfig, T configuration) {
+            this.typeSafeConfig = requireNonNull(typeSafeConfig);
+            this.configuration = requireNonNull(configuration);
+        }
+
+        Config getTypeSafeConfig() {
+            return typeSafeConfig;
+        }
+
+        T getConfiguration() {
+            return configuration;
         }
 
     }
