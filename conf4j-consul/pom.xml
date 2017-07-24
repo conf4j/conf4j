@@ -29,7 +29,7 @@
         <dependency>
             <groupId>net.advpos.conf4j</groupId>
             <artifactId>conf4j-core</artifactId>
-            <version>${version}</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.orbitz.consul</groupId>
