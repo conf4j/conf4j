@@ -14,7 +14,17 @@
     <dependencies>
         <dependency>
             <groupId>net.advpos.conf4j</groupId>
+            <artifactId>conf4j-consul</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.advpos.conf4j</groupId>
             <artifactId>conf4j-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>net.advpos.conf4j</groupId>
+            <artifactId>conf4j-etcd</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
