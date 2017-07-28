@@ -69,6 +69,20 @@ public class ConfigurationProviderTest {
         assertThat(fallbackHierarchyConfiguration).isEqualToComparingFieldByField(expectedConfiguration);
     }
 
+    @Test
+    public void testJacksonIgnoresUnknownProperties() {
+        FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
+        FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
+
+        ConfigurationProvider<TestConfiguration> provider = ConfigurationProvider.builder(TestConfiguration.class)
+                .withConfigurationSource(configurationSource)
+                .withFallback(fallbackSource)
+                .build();
+
+        TestConfiguration testConfiguration = provider.get();
+        assertThat(testConfiguration).isNotNull();
+    }
+
     private FilesystemConfigurationSource createSourceWithFile(String filePath) {
         return FilesystemConfigurationSource.builder()
                 .withFilePath(getClass().getResource(filePath).getFile())

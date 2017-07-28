@@ -1,21 +1,21 @@
 package net.advpos.conf4j.core;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigRenderOptions;
 import net.advpos.conf4j.core.source.ConfigurationSource;
 import net.advpos.conf4j.core.source.MergeConfigurationSource;
 
-import java.io.IOException;
 import java.util.Arrays;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
 public class ConfigurationProvider<T> {
 
-    private static final ObjectMapper mapper = new ObjectMapper();
-
+    private final ObjectMapper mapper;
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
     private final AtomicReference<ConfigHolder<T>> configurationCache = new AtomicReference<>();
@@ -23,6 +23,7 @@ public class ConfigurationProvider<T> {
     private ConfigurationProvider(Class<? extends T> configurationClass, ConfigurationSource configurationSource) {
         this.configurationClass = requireNonNull(configurationClass);
         this.configurationSource = requireNonNull(configurationSource);
+        this.mapper = createObjectMapper();
     }
 
     public T get() {
@@ -39,17 +40,24 @@ public class ConfigurationProvider<T> {
         Config config = configurationSource.getConfig();
         config.resolve();
 
-        String configAsJson = config.root().render(ConfigRenderOptions.concise());
         try {
-            T configuration = mapper.readValue(configAsJson, configurationClass);
+            Map<String, Object> configMap = config.root().unwrapped();
+            T configuration = mapper.convertValue(configMap, configurationClass);
             return new ConfigHolder<>(config, configuration);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new IllegalStateException("Failed to create configuration object", e);
         }
     }
 
     public static <T> Builder<T> builder(Class<? extends T> configurationClass) {
         return new Builder<>(configurationClass);
+    }
+
+    private ObjectMapper createObjectMapper() {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+        mapper.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS);
+        return mapper;
     }
 
     public static class Builder<T> {
