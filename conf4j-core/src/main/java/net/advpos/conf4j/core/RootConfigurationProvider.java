@@ -6,6 +6,8 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.typesafe.config.Config;
 import net.advpos.conf4j.core.source.ConfigurationSource;
 import net.advpos.conf4j.core.source.MergeConfigurationSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -14,6 +16,9 @@ import java.util.concurrent.atomic.AtomicReference;
 import static java.util.Objects.requireNonNull;
 
 public class RootConfigurationProvider<T> extends ConfigurationProvider<T> {
+
+    private static final Logger logger = LoggerFactory.getLogger(RootConfigurationProvider.class);
+
     private final ObjectMapper mapper;
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
@@ -50,6 +55,21 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> {
 
     public static <T> Builder<T> builder(Class<? extends T> configurationClass) {
         return new Builder<>(configurationClass);
+    }
+
+    private void reload() {
+        ConfigHolder<T> oldConfigHolder = configurationCache.get();
+        ConfigHolder<T> newConfigHolder = buildConfigObjectIfNeeded(null);
+        configurationCache.set(newConfigHolder);
+
+        if (oldConfigHolder.getTypeSafeConfig().equals(newConfigHolder.getTypeSafeConfig())) {
+            logger.debug("Skipping notifying listeners about config reload, configurations are identical");
+            return;
+        }
+
+        T oldConfig = oldConfigHolder.getConfiguration();
+        T newConfig = newConfigHolder.getConfiguration();
+        notifyListenersOnConfigChangeIfNeeded(oldConfig, newConfig);
     }
 
     private ObjectMapper createObjectMapper() {
@@ -92,26 +112,6 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> {
                     .withSource(this.configurationSource)
                     .withFallback(fallbackSource)
                     .build();
-        }
-
-    }
-
-    private static class ConfigHolder<T> {
-
-        private Config typeSafeConfig;
-        private T configuration;
-
-        ConfigHolder(Config typeSafeConfig, T configuration) {
-            this.typeSafeConfig = requireNonNull(typeSafeConfig);
-            this.configuration = requireNonNull(configuration);
-        }
-
-        Config getTypeSafeConfig() {
-            return typeSafeConfig;
-        }
-
-        T getConfiguration() {
-            return configuration;
         }
 
     }

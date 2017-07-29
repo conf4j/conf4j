@@ -12,11 +12,19 @@ public class SubConfigurationProvider<R, T> extends ConfigurationProvider<T> {
     SubConfigurationProvider(ConfigurationProvider<R> parentConfigurationProvider, Function<R, T> configurationExtractor) {
         this.parentConfigurationProvider = requireNonNull(parentConfigurationProvider);
         this.configurationExtractor = requireNonNull(configurationExtractor);
+
+        parentConfigurationProvider.registerChangeListener(this::parentConfigurationChanged);
     }
 
     @Override
     public T get() {
         return configurationExtractor.apply(parentConfigurationProvider.get());
+    }
+
+    private void parentConfigurationChanged(R oldParentConfig, R newParentConfig) {
+        T oldConfig = configurationExtractor.apply(oldParentConfig);
+        T newConfig = configurationExtractor.apply(newParentConfig);
+        notifyListenersOnConfigChangeIfNeeded(oldConfig, newConfig);
     }
 
 }
