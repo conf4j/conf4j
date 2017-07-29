@@ -10,12 +10,12 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ConfigurationProviderTest {
+public class RootConfigurationProviderTest {
 
     @Test
-    public void testConfigurationProvider() {
+    public void testRootConfigurationProvider() {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
-        ConfigurationProvider<TestConfiguration> provider = ConfigurationProvider.builder(TestConfiguration.class)
+        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
 
@@ -37,7 +37,7 @@ public class ConfigurationProviderTest {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
         FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
 
-        ConfigurationProvider<TestConfigurationWithFallback> provider = ConfigurationProvider.builder(TestConfigurationWithFallback.class)
+        RootConfigurationProvider<TestConfigurationWithFallback> provider = RootConfigurationProvider.builder(TestConfigurationWithFallback.class)
                 .withConfigurationSource(configurationSource)
                 .withFallback(fallbackSource)
                 .build();
@@ -55,7 +55,7 @@ public class ConfigurationProviderTest {
         FilesystemConfigurationSource specificEnvironmentSource = createSourceWithFile("hierarchy/env.conf");
         FilesystemConfigurationSource commonSource = createSourceWithFile("hierarchy/common.conf");
 
-        ConfigurationProvider<FallbackHierarchyConfiguration> provider = ConfigurationProvider.builder(FallbackHierarchyConfiguration.class)
+        RootConfigurationProvider<FallbackHierarchyConfiguration> provider = RootConfigurationProvider.builder(FallbackHierarchyConfiguration.class)
                 .withConfigurationSource(specificServiceSource)
                 .withFallback(specificEnvironmentSource, commonSource)
                 .build();
@@ -74,7 +74,7 @@ public class ConfigurationProviderTest {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
         FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
 
-        ConfigurationProvider<TestConfiguration> provider = ConfigurationProvider.builder(TestConfiguration.class)
+        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .withFallback(fallbackSource)
                 .build();
