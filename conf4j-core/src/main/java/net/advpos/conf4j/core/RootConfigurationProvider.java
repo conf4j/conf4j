@@ -13,7 +13,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
-public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
+public class RootConfigurationProvider<T> extends ConfigurationProvider<T> {
     private final ObjectMapper mapper;
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;

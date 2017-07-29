@@ -1,7 +1,13 @@
 package net.advpos.conf4j.core;
 
-public interface ConfigurationProvider<T> {
+import java.util.function.Function;
 
-    T get();
+public abstract class ConfigurationProvider<T> {
+
+    public abstract T get();
+
+    public <C> SubConfigurationProvider<T, C> getSubConfigurationProvider(Function<T, C> configurationExtractor) {
+        return new SubConfigurationProvider<>(this, configurationExtractor);
+    }
 
 }
