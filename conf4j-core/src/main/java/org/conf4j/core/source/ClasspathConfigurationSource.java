@@ -28,6 +28,11 @@ public class ClasspathConfigurationSource implements ConfigurationSource {
         return configCache.updateAndGet(this::buildConfigIfAbsent);
     }
 
+    @Override
+    public void reload() {
+        configCache.set(this.buildConfigIfAbsent(null));
+    }
+
     private Config buildConfigIfAbsent(Config currentConfig) {
         if (currentConfig != null) return currentConfig;
 

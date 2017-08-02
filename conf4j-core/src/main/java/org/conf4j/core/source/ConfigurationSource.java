@@ -5,5 +5,6 @@ import com.typesafe.config.Config;
 public interface ConfigurationSource {
 
     Config getConfig();
+    void reload();
 
 }

@@ -21,6 +21,12 @@ public class MergeConfigurationSource implements ConfigurationSource {
                 .withFallback(fallbackConfig);
     }
 
+    @Override
+    public void reload() {
+        fallbackSource.reload();
+        source.reload();
+    }
+
     public static Builder builder() {
         return new Builder();
     }

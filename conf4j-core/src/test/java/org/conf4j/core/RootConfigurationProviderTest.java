@@ -5,8 +5,17 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.conf4j.core.source.FilesystemConfigurationSource;
+import org.conf4j.core.source.reload.ReloadStrategy;
 import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +48,7 @@ public class RootConfigurationProviderTest {
 
         RootConfigurationProvider<TestConfigurationWithFallback> provider = RootConfigurationProvider.builder(TestConfigurationWithFallback.class)
                 .withConfigurationSource(configurationSource)
-                .withFallback(fallbackSource)
+                .withFallbacks(fallbackSource)
                 .build();
 
         TestConfigurationWithFallback testConfiguration = provider.get();
@@ -57,7 +66,8 @@ public class RootConfigurationProviderTest {
 
         RootConfigurationProvider<FallbackHierarchyConfiguration> provider = RootConfigurationProvider.builder(FallbackHierarchyConfiguration.class)
                 .withConfigurationSource(specificServiceSource)
-                .withFallback(specificEnvironmentSource, commonSource)
+                .addFallback(specificEnvironmentSource)
+                .addFallback(commonSource)
                 .build();
 
         FallbackHierarchyConfiguration fallbackHierarchyConfiguration = provider.get();
@@ -70,13 +80,63 @@ public class RootConfigurationProviderTest {
     }
 
     @Test
+    public void testConfigurationReloadStrategy() throws IOException {
+        File configFile = File.createTempFile(RandomStringUtils.randomAlphanumeric(12), ".conf");
+
+        LongAdder numOfCallsToChangeListenerWithOldConfig = new LongAdder();
+        LongAdder numOfCallsToChangeListener = new LongAdder();
+
+        AtomicReference<Runnable> reloadCallbackReference = new AtomicReference<>();
+        ConfigurationProvider<TestConfiguration> provider = createConfigProviderWithReloadStrategy(configFile, reloadCallbackReference);
+
+        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListenerWithOldConfig.increment());
+        provider.registerChangeListener((newConfig) -> numOfCallsToChangeListener.increment());
+
+        Runnable reloadCallback = reloadCallbackReference.get();
+        assertThat(reloadCallback).isNotNull();
+
+        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(0);
+        assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(0);
+
+        writeConfigToConfigurationFile(configFile);
+        reloadCallback.run();
+
+        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(1);
+        assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(1);
+    }
+
+    @Test
+    public void testStopTriggeredOnReloadStrategiesOnClose() throws Exception {
+        AtomicBoolean stopCalled = new AtomicBoolean(false);
+        ReloadStrategy testReloadStrategy = new ReloadStrategy() {
+            @Override
+            public void start(Runnable reloadCallback) {}
+
+            @Override
+            public void stop() {
+                stopCalled.set(true);
+            }
+        };
+
+        FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
+        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+                .withConfigurationSource(configurationSource)
+                .addReloadStrategy(testReloadStrategy)
+                .build();
+
+        assertThat(stopCalled.get()).isFalse();
+        provider.close();
+        assertThat(stopCalled.get()).isTrue();
+    }
+
+    @Test
     public void testJacksonIgnoresUnknownProperties() {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
         FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
 
         RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
-                .withFallback(fallbackSource)
+                .withFallbacks(fallbackSource)
                 .build();
 
         TestConfiguration testConfiguration = provider.get();
@@ -87,6 +147,23 @@ public class RootConfigurationProviderTest {
         return FilesystemConfigurationSource.builder()
                 .withFilePath(getClass().getResource(filePath).getFile())
                 .build();
+    }
+
+    private ConfigurationProvider<TestConfiguration> createConfigProviderWithReloadStrategy(File configFile,
+                                                                                            AtomicReference<Runnable> reloadCallbackReference) {
+        FilesystemConfigurationSource configurationSource = FilesystemConfigurationSource.builder()
+                .withFilePath(configFile.getAbsolutePath())
+                .build();
+        return RootConfigurationProvider.builder(TestConfiguration.class)
+                .withConfigurationSource(configurationSource)
+                .addReloadStrategy(reloadCallbackReference::set)
+                .build();
+    }
+
+    private void writeConfigToConfigurationFile(File configurationFile) throws IOException {
+        FileOutputStream out = new FileOutputStream(configurationFile);
+        out.write("someProperty: someValue".getBytes());
+        out.close();
     }
 
     public static class TestConfiguration {
