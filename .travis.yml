@@ -1,0 +1,16 @@
+sudo: required
+language: java
+
+services:
+  - docker
+
+jdk:
+  - oraclejdk8
+
+install: ./mvnw install -DskipTests -Dgpg.skip
+notifications:
+  slack:
+    secure: zWif8gLHJr99lsNpflS3kdzTCayiMFFc52f+3ANh4I7Y2Ttl6+0hflYXUJVGvUlc/BOa3A5I8WwYRw+Iopzh47I4TklNaFD5qugt9qXfTn3h//UWxqNKWMqK4T+269hIajYmrxvltV76ikmIT4VcRm0jjn9sTmTSuqhi/shYIlbiOqdhXJgcy+0s/26dbS1p7NMu7kgGSFFnMTjZdE8vIVNnedVfc6S+fyrEETZkrb5Xxmt2DHjsoU/WNdojDJuVR0aTwN19FNEW8D0qPjvCsgTRwtW69RHLneBbgWUN5Fq7gSxOJ9VYYt52LkyohOQ5H+KRzwQ7E/7r2h92JdUHaXhnC3Y1n6ygy34Ou6z1IQXCIDm5Udazq5OsDbrPjB+bHKqALTGBU1XUVYVEsORArvuTYlZqWxC1rTQ/tBP25S5cDFH7/RTjq/IOdB/eDSHYnhKZtLbDBa7QH+t9T4CvRkvw2VyAEZArApBfgi9Qz4qqqFLL8l5DEedwxOKYgYE02GLFglrUvCCOsZWD+J9BIUZhVu5DlPXHGlhX1uLG/kAmrjBsGgywjAO1AjTdNceIFwd04IBIEg8TQT5UbVX3AQz466s9rO58lTfleQgoQ43xnLi4lUCyn5giOnmZuVYWi0I8GovGF0QCJLNPHSOjLW3cEJRSkEbHLFLQGBRlDv0=
+
+after_success:
+  - ./mvnw clean cobertura:cobertura coveralls:report
