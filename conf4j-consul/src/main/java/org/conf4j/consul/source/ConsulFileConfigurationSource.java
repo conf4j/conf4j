@@ -8,24 +8,28 @@ import org.conf4j.core.source.ConfigurationSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConsulFileConfigurationSource implements ConfigurationSource {
+public class ConsulFileConfigurationSource implements ConfigurationSource, ConsulConfigurationSource {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsulFileConfigurationSource.class);
 
-    private final Consul consul;
+    private final KeyValueClient kvClient;
     private final String configurationFilePath;
     private final boolean ignoreMissingResource;
+    private final Duration readTimeout;
     private final AtomicReference<Config> configCache = new AtomicReference<>();
 
-    private ConsulFileConfigurationSource(Consul consul, String configurationFilePath, boolean ignoreMissingFile) {
-        this.consul = requireNonNull(consul);
+    private ConsulFileConfigurationSource(KeyValueClient kvClient, String configurationFilePath,
+                                          boolean ignoreMissingFile, Duration readTimeout) {
+        this.kvClient = requireNonNull(kvClient);
         this.configurationFilePath = requireNonNull(configurationFilePath);
         this.ignoreMissingResource = ignoreMissingFile;
+        this.readTimeout = requireNonNull(readTimeout);
         configCache.set(buildConfigIfAbsent(null));
     }
 
@@ -39,10 +43,24 @@ public class ConsulFileConfigurationSource implements ConfigurationSource {
         configCache.set(this.buildConfigIfAbsent(null));
     }
 
+    @Override
+    public KeyValueClient getKeyValueClient() {
+        return kvClient;
+    }
+
+    @Override
+    public String getPathToWatch() {
+        return configurationFilePath;
+    }
+
+    @Override
+    public Duration getReadTimeout() {
+        return readTimeout;
+    }
+
     private Config buildConfigIfAbsent(Config currentConfig) {
         if (currentConfig != null) return currentConfig;
 
-        KeyValueClient kvClient = consul.keyValueClient();
         Optional<String> configurationFile = kvClient.getValueAsString(configurationFilePath).toJavaUtil();
         if (configurationFile.isPresent()) {
             return ConfigFactory.parseString(configurationFile.get());
@@ -63,12 +81,14 @@ public class ConsulFileConfigurationSource implements ConfigurationSource {
 
     public static class Builder {
 
+        private Duration readTimeout = Duration.ofSeconds(5);
         private Consul.Builder consulBuilder;
         private String configurationFilePath;
         private boolean ignoreMissingResource;
 
         private Builder() {
-            this.consulBuilder = Consul.builder();
+            this.consulBuilder = Consul.builder()
+                    .withReadTimeoutMillis(readTimeout.toMillis());
         }
 
         public Builder withConsulUrl(String consulUrl) {
@@ -93,6 +113,7 @@ public class ConsulFileConfigurationSource implements ConfigurationSource {
 
         public Builder withReadTimeoutMillis(long timeoutMillis) {
             consulBuilder.withReadTimeoutMillis(timeoutMillis);
+            readTimeout = Duration.ofMillis(timeoutMillis);
             return this;
         }
 
@@ -108,7 +129,8 @@ public class ConsulFileConfigurationSource implements ConfigurationSource {
 
         public ConsulFileConfigurationSource build() {
             Consul consul = consulBuilder.build();
-            return new ConsulFileConfigurationSource(consul, configurationFilePath, ignoreMissingResource);
+            KeyValueClient kvClient = consul.keyValueClient();
+            return new ConsulFileConfigurationSource(kvClient, configurationFilePath, ignoreMissingResource, readTimeout);
         }
 
     }
