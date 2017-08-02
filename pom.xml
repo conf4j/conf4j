@@ -7,6 +7,7 @@
     <packaging>pom</packaging>
 
     <name>conf4j</name>
+    <description>Easy to use configuration management library for Java</description>
     <url>https://github.com/conf4j/conf4j</url>
 
     <licenses>
@@ -186,4 +187,11 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <developers>
+        <developer>
+            <name>Asaf Alima</name>
+            <url>https://github.com/asafalima</url>
+        </developer>
+    </developers>
 </project>
