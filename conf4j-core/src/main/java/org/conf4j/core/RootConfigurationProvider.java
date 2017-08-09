@@ -85,10 +85,8 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
     }
 
     private ConfigHolder<T> loadConfiguration() {
-        Config config = configurationSource.getConfig();
-        config.resolve();
-
         try {
+            Config config = configurationSource.getConfig().resolve();
             Map<String, Object> configMap = config.root().unwrapped();
             T configuration = mapper.convertValue(configMap, configurationClass);
             return new ConfigHolder<>(config, configuration);

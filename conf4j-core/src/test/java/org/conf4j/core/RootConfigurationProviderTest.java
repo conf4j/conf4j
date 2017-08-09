@@ -143,6 +143,28 @@ public class RootConfigurationProviderTest {
         assertThat(testConfiguration).isNotNull();
     }
 
+    @Test
+    public void testTypeSafeConfigObjectResolved() {
+        FilesystemConfigurationSource configurationSource = createSourceWithFile("resolvable.conf");
+        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+                .withConfigurationSource(configurationSource)
+                .build();
+
+        Config config = ConfigFactory.parseMap(ImmutableMap.of(
+                "calender", ImmutableMap.of("numberOfDaysInWeek", 7),
+                "libraryName", "conf4j",
+                "numberOfDaysInWeek", 7
+        ));
+
+        assertThat(provider.getConfig()).isEqualTo(config);
+
+        TestConfiguration testConfiguration = provider.get();
+        assertThat(testConfiguration).isNotNull();
+
+        TestConfiguration expectedConfiguration = new TestConfiguration("conf4j", 7);
+        assertThat(testConfiguration).isEqualToComparingFieldByField(expectedConfiguration);
+    }
+
     private FilesystemConfigurationSource createSourceWithFile(String filePath) {
         return FilesystemConfigurationSource.builder()
                 .withFilePath(getClass().getResource(filePath).getFile())
