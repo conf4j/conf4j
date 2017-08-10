@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -35,7 +36,7 @@ public abstract class ConfigurationProvider<T> {
     }
 
     protected void notifyListenersOnConfigChangeIfNeeded(T oldConfig, T newConfig) {
-        if (newConfig.equals(oldConfig)) {
+        if (Objects.equals(oldConfig, newConfig)) {
             logger.trace("Configurations are identical - not notifying listeners");
             return;
         }
@@ -47,9 +48,17 @@ public abstract class ConfigurationProvider<T> {
         }
 
         logger.trace("Going to notifying {} listeners about configuration change", numOfListeners);
-        configurationChangeListeners.forEach(listener -> listener.accept(oldConfig, newConfig));
-        newConfigurationListeners.forEach(listener -> listener.accept(newConfig));
+        configurationChangeListeners.forEach(listener -> notifyChangeListenerSafely(() -> listener.accept(oldConfig, newConfig)));
+        newConfigurationListeners.forEach(listener -> notifyChangeListenerSafely(() -> listener.accept(newConfig)));
         logger.trace("{} listeners were notified about configuration change", numOfListeners);
+    }
+
+    private void notifyChangeListenerSafely(Runnable runnable) {
+        try {
+            runnable.run();
+        } catch (Throwable t) {
+            logger.error("Uncaught exception while notifying configuration change listener", t);
+        }
     }
 
 }

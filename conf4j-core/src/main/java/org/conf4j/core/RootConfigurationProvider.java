@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
@@ -75,6 +76,7 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
         ConfigHolder<T> newConfigHolder = loadConfiguration();
         configurationCache.set(newConfigHolder);
 
+        if (oldConfigHolder == null) return;
         if (oldConfigHolder.getTypeSafeConfig().equals(newConfigHolder.getTypeSafeConfig())) {
             logger.debug("Skipping notifying listeners about config reload, configurations are identical");
             return;
@@ -163,7 +165,7 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
                 ReloadStrategy reloadStrategy = watchableConfigSource.getReloadStrategy();
 
                 logger.info("Registering reload strategy of type: {} from watchable configuration source",
-                        reloadStrategy.getClass());
+                        reloadStrategy.getClass().getSimpleName());
                 addReloadStrategy(reloadStrategy);
             }
         }

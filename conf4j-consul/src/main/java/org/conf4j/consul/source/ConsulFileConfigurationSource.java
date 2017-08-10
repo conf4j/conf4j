@@ -23,16 +23,17 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
     private final KeyValueClient kvClient;
     private final String configurationFilePath;
     private final boolean ignoreMissingResource;
-    private final Duration readTimeout;
+    private final Duration watchTimeout;
     private final AtomicReference<Config> configCache = new AtomicReference<>();
     private final ConsulWatchReloadStrategy reloadStrategy;
 
     private ConsulFileConfigurationSource(KeyValueClient kvClient, String configurationFilePath,
-                                          boolean ignoreMissingFile, boolean reloadOnChange, Duration readTimeout) {
+                                          boolean ignoreMissingFile, boolean reloadOnChange,
+                                          Duration watchTimeout) {
         this.kvClient = requireNonNull(kvClient);
         this.configurationFilePath = requireNonNull(configurationFilePath);
         this.ignoreMissingResource = ignoreMissingFile;
-        this.readTimeout = requireNonNull(readTimeout);
+        this.watchTimeout = requireNonNull(watchTimeout);
         configCache.set(buildConfigIfAbsent(null));
 
         if (reloadOnChange) {
@@ -75,8 +76,8 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
     }
 
     @Override
-    public Duration getReadTimeout() {
-        return readTimeout;
+    public Duration getWatchTimeout() {
+        return watchTimeout;
     }
 
     private Config buildConfigIfAbsent(Config currentConfig) {
@@ -102,7 +103,7 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
 
     public static class Builder {
 
-        private Duration readTimeout = Duration.ofSeconds(5);
+        private Duration watchTimeout = Duration.ofSeconds(10);
         private Consul.Builder consulBuilder;
         private String configurationFilePath;
         private boolean ignoreMissingResource;
@@ -110,10 +111,14 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
 
         private Builder() {
             this.consulBuilder = Consul.builder()
-                    .withReadTimeoutMillis(readTimeout.toMillis());
+                    .withReadTimeoutMillis(Duration.ofSeconds(30).toMillis());
         }
 
         public Builder withConsulUrl(String consulUrl) {
+            if (!consulUrl.startsWith("http")) {
+                consulUrl = "http://" + consulUrl;
+            }
+
             consulBuilder.withUrl(consulUrl);
             return this;
         }
@@ -128,14 +133,18 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
             return this;
         }
 
-        public Builder withConnectTimeoutMillis(long timeoutMillis) {
-            consulBuilder.withConnectTimeoutMillis(timeoutMillis);
+        public Builder withConnectTimeout(Duration connectTimeout) {
+            consulBuilder.withConnectTimeoutMillis(connectTimeout.toMillis());
             return this;
         }
 
-        public Builder withReadTimeoutMillis(long timeoutMillis) {
-            consulBuilder.withReadTimeoutMillis(timeoutMillis);
-            readTimeout = Duration.ofMillis(timeoutMillis);
+        public Builder withReadTimeout(Duration readTimeout) {
+            consulBuilder.withReadTimeoutMillis(readTimeout.toMillis());
+            return this;
+        }
+
+        public Builder withWatchTimeout(Duration watchTimeout) {
+            this.watchTimeout = watchTimeout;
             return this;
         }
 
@@ -158,7 +167,7 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
             Consul consul = consulBuilder.build();
             KeyValueClient kvClient = consul.keyValueClient();
             return new ConsulFileConfigurationSource(kvClient, configurationFilePath, ignoreMissingResource,
-                    reloadOnChange, readTimeout);
+                    reloadOnChange, watchTimeout);
         }
 
     }

@@ -22,4 +22,19 @@ class ConfigHolder<T> {
         return configuration;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ConfigHolder<?> that = (ConfigHolder<?>) o;
+
+        return typeSafeConfig != null ? typeSafeConfig.equals(that.typeSafeConfig) : that.typeSafeConfig == null;
+    }
+
+    @Override
+    public int hashCode() {
+        return typeSafeConfig != null ? typeSafeConfig.hashCode() : 0;
+    }
+
 }

@@ -8,6 +8,6 @@ public interface ConsulConfigurationSource {
 
     KeyValueClient getKeyValueClient();
     String getPathToWatch();
-    Duration getReadTimeout();
+    Duration getWatchTimeout();
 
 }

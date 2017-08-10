@@ -65,7 +65,7 @@ public class ConsulWatchReloadStrategy implements ReloadStrategy {
         public ConsulWatchReloadStrategy build() {
             requireNonNull(source);
             return new ConsulWatchReloadStrategy(source.getKeyValueClient(),
-                    source.getPathToWatch(), source.getReadTimeout());
+                    source.getPathToWatch(), source.getWatchTimeout());
         }
 
     }
