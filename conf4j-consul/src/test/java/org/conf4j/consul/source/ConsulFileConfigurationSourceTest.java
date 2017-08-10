@@ -55,22 +55,36 @@ public class ConsulFileConfigurationSourceTest {
     @Test
     public void testIllegalStateExceptionThrownWhenMissingFile() throws Exception {
         String filePath = RandomStringUtils.randomAlphanumeric(15);
-        assertThatThrownBy(() -> createConfigurationSource(filePath, false))
+        assertThatThrownBy(() -> createConfigurationSource(filePath, false, false))
                 .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
     public void testIgnoreMissingFileOption() throws Exception {
         String filePath = RandomStringUtils.randomAlphanumeric(15);
-        ConsulFileConfigurationSource source = createConfigurationSource(filePath, true);
+        ConsulFileConfigurationSource source = createConfigurationSource(filePath, true, false);
 
         Config config = source.getConfig();
         assertThat(config).isNotNull();
         assertThat(config).isEqualTo(ConfigFactory.empty());
     }
 
+    @Test
+    public void testReloadStrategyIsNotNullWhenCallingReloadOnChange() throws Exception {
+        ConsulFileConfigurationSource source;
+        String filePath = RandomStringUtils.randomAlphanumeric(15);
+
+        source = createConfigurationSource(filePath, true, false);
+        assertThat(source.shouldWatchForChange()).isFalse();
+        assertThat(source.getReloadStrategy()).isNull();
+
+        source = createConfigurationSource(filePath, true, true);
+        assertThat(source.shouldWatchForChange()).isTrue();
+        assertThat(source.getReloadStrategy()).isNotNull();
+    }
+
     private void testConfigLoaded(String filePath, String expectedMessage) {
-        ConsulFileConfigurationSource source = createConfigurationSource(filePath, false);
+        ConsulFileConfigurationSource source = createConfigurationSource(filePath, false, false);
 
         Config config = source.getConfig();
         assertThat(config).isNotNull();
@@ -82,13 +96,17 @@ public class ConsulFileConfigurationSourceTest {
         standaloneConsul.stop();
     }
 
-    private ConsulFileConfigurationSource createConfigurationSource(String filePath, boolean ignoreMissingFile) {
+    private ConsulFileConfigurationSource createConfigurationSource(String filePath, boolean ignoreMissingFile, boolean reloadOnChange) {
         Builder builder = ConsulFileConfigurationSource.builder()
                 .withConfigurationFilePath(directory + filePath)
                 .withConsulUrl(standaloneConsul.getConsulUrl());
 
         if (ignoreMissingFile) {
-            builder.ignoreMissingResource();
+            builder = builder.ignoreMissingResource();
+        }
+
+        if (reloadOnChange) {
+            builder = builder.reloadOnChange();
         }
 
         return builder.build();

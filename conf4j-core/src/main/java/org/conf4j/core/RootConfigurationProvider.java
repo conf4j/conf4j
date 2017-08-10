@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.typesafe.config.Config;
 import org.conf4j.core.source.ConfigurationSource;
 import org.conf4j.core.source.MergeConfigurationSource;
+import org.conf4j.core.source.WatchableConfigurationSource;
 import org.conf4j.core.source.reload.ReloadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -119,6 +120,7 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
 
         public Builder<T> withConfigurationSource(ConfigurationSource configurationSource) {
             this.configurationSource = configurationSource;
+            addReloadStrategyIfNeeded(configurationSource);
             return this;
         }
 
@@ -150,6 +152,20 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
                     .withSource(this.configurationSource)
                     .withFallback(fallbackSource)
                     .build();
+
+            addReloadStrategyIfNeeded(fallbackSource);
+        }
+
+        private void addReloadStrategyIfNeeded(ConfigurationSource fallbackSource) {
+            if (!WatchableConfigurationSource.class.isAssignableFrom(fallbackSource.getClass())) return;
+            WatchableConfigurationSource watchableConfigSource = (WatchableConfigurationSource) fallbackSource;
+            if (watchableConfigSource.shouldWatchForChange()) {
+                ReloadStrategy reloadStrategy = watchableConfigSource.getReloadStrategy();
+
+                logger.info("Registering reload strategy of type: {} from watchable configuration source",
+                        reloadStrategy.getClass());
+                addReloadStrategy(reloadStrategy);
+            }
         }
 
     }

@@ -4,7 +4,9 @@ import com.orbitz.consul.Consul;
 import com.orbitz.consul.KeyValueClient;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.conf4j.core.source.ConfigurationSource;
+import org.conf4j.consul.source.reload.ConsulWatchReloadStrategy;
+import org.conf4j.core.source.WatchableConfigurationSource;
+import org.conf4j.core.source.reload.ReloadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static java.util.Objects.requireNonNull;
 
-public class ConsulFileConfigurationSource implements ConfigurationSource, ConsulConfigurationSource {
+public class ConsulFileConfigurationSource implements WatchableConfigurationSource, ConsulConfigurationSource {
 
     private static final Logger logger = LoggerFactory.getLogger(ConsulFileConfigurationSource.class);
 
@@ -23,19 +25,38 @@ public class ConsulFileConfigurationSource implements ConfigurationSource, Consu
     private final boolean ignoreMissingResource;
     private final Duration readTimeout;
     private final AtomicReference<Config> configCache = new AtomicReference<>();
+    private final ConsulWatchReloadStrategy reloadStrategy;
 
     private ConsulFileConfigurationSource(KeyValueClient kvClient, String configurationFilePath,
-                                          boolean ignoreMissingFile, Duration readTimeout) {
+                                          boolean ignoreMissingFile, boolean reloadOnChange, Duration readTimeout) {
         this.kvClient = requireNonNull(kvClient);
         this.configurationFilePath = requireNonNull(configurationFilePath);
         this.ignoreMissingResource = ignoreMissingFile;
         this.readTimeout = requireNonNull(readTimeout);
         configCache.set(buildConfigIfAbsent(null));
+
+        if (reloadOnChange) {
+            this.reloadStrategy = ConsulWatchReloadStrategy.builder()
+                    .withConsulConfigurationSource(this)
+                    .build();
+        } else {
+            this.reloadStrategy = null;
+        }
     }
 
     @Override
     public Config getConfig() {
         return configCache.updateAndGet(this::buildConfigIfAbsent);
+    }
+
+    @Override
+    public boolean shouldWatchForChange() {
+        return reloadStrategy != null;
+    }
+
+    @Override
+    public ReloadStrategy getReloadStrategy() {
+        return reloadStrategy;
     }
 
     @Override
@@ -85,6 +106,7 @@ public class ConsulFileConfigurationSource implements ConfigurationSource, Consu
         private Consul.Builder consulBuilder;
         private String configurationFilePath;
         private boolean ignoreMissingResource;
+        private boolean reloadOnChange;
 
         private Builder() {
             this.consulBuilder = Consul.builder()
@@ -127,10 +149,16 @@ public class ConsulFileConfigurationSource implements ConfigurationSource, Consu
             return this;
         }
 
+        public Builder reloadOnChange() {
+            this.reloadOnChange = true;
+            return this;
+        }
+
         public ConsulFileConfigurationSource build() {
             Consul consul = consulBuilder.build();
             KeyValueClient kvClient = consul.keyValueClient();
-            return new ConsulFileConfigurationSource(kvClient, configurationFilePath, ignoreMissingResource, readTimeout);
+            return new ConsulFileConfigurationSource(kvClient, configurationFilePath, ignoreMissingResource,
+                    reloadOnChange, readTimeout);
         }
 
     }

@@ -7,6 +7,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.conf4j.core.source.FilesystemConfigurationSource;
+import org.conf4j.core.source.WatchableConfigurationSource;
 import org.conf4j.core.source.reload.ReloadStrategy;
 import org.junit.Test;
 
@@ -106,6 +107,32 @@ public class RootConfigurationProviderTest {
     }
 
     @Test
+    public void testConfigurationReloadStrategyRegisteredFromWatchableConfigurationSource() throws IOException {
+        File configFile = File.createTempFile(RandomStringUtils.randomAlphanumeric(12), ".conf");
+
+        LongAdder numOfCallsToChangeListenerWithOldConfig = new LongAdder();
+        LongAdder numOfCallsToChangeListener = new LongAdder();
+
+        AtomicReference<Runnable> reloadCallbackReference = new AtomicReference<>();
+        ConfigurationProvider<TestConfiguration> provider = createConfigProviderWithWatchableConfigSource(configFile, reloadCallbackReference);
+
+        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListenerWithOldConfig.increment());
+        provider.registerChangeListener((newConfig) -> numOfCallsToChangeListener.increment());
+
+        Runnable reloadCallback = reloadCallbackReference.get();
+        assertThat(reloadCallback).isNotNull();
+
+        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(0);
+        assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(0);
+
+        writeConfigToConfigurationFile(configFile);
+        reloadCallback.run();
+
+        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(1);
+        assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(1);
+    }
+
+    @Test
     public void testStopTriggeredOnReloadStrategiesOnClose() throws Exception {
         AtomicBoolean stopCalled = new AtomicBoolean(false);
         ReloadStrategy testReloadStrategy = new ReloadStrategy() {
@@ -179,6 +206,39 @@ public class RootConfigurationProviderTest {
         return RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .addReloadStrategy(reloadCallbackReference::set)
+                .build();
+    }
+
+    private ConfigurationProvider<TestConfiguration> createConfigProviderWithWatchableConfigSource(File configFile,
+                                                                                                   AtomicReference<Runnable> reloadCallbackReference) {
+        FilesystemConfigurationSource filesystemConfigurationSource= FilesystemConfigurationSource.builder()
+                .withFilePath(configFile.getAbsolutePath())
+                .build();
+
+        WatchableConfigurationSource configurationSource = new WatchableConfigurationSource() {
+            @Override
+            public boolean shouldWatchForChange() {
+                return true;
+            }
+
+            @Override
+            public ReloadStrategy getReloadStrategy() {
+                return reloadCallbackReference::set;
+            }
+
+            @Override
+            public Config getConfig() {
+                return filesystemConfigurationSource.getConfig();
+            }
+
+            @Override
+            public void reload() {
+                filesystemConfigurationSource.reload();
+            }
+        };
+
+        return RootConfigurationProvider.builder(TestConfiguration.class)
+                .withConfigurationSource(configurationSource)
                 .build();
     }
 
