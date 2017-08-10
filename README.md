@@ -8,7 +8,7 @@
 ### Gradle
 
 ```groovy
-compile 'org.conf4j:conf4j-core:2017.8.0'
+compile 'org.conf4j:conf4j-core:2017.8.1'
 ```
 
 ### Maven
@@ -17,7 +17,7 @@ compile 'org.conf4j:conf4j-core:2017.8.0'
 <dependency>
   <groupId>org.conf4j</groupId>
   <artifactId>conf4j-core</artifactId>
-  <version>2017.8.0</version>
+  <version>2017.8.1</version>
 </dependency>
 ```
 
