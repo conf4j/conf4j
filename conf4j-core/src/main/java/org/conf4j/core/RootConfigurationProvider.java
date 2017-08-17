@@ -15,16 +15,18 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-public class RootConfigurationProvider<T> extends ConfigurationProvider<T> implements AutoCloseable {
+public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(RootConfigurationProvider.class);
 
     private final ObjectMapper mapper;
+    private final ChangeListenersNotifier<T> changeListenersNotifier;
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
     private final List<ReloadStrategy> reloadStrategies;
@@ -36,18 +38,26 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
         this.configurationClass = requireNonNull(configurationClass);
         this.configurationSource = requireNonNull(configurationSource);
         this.reloadStrategies = requireNonNull(reloadStrategies);
+        this.changeListenersNotifier = new ChangeListenersNotifier<>();
         this.mapper = createObjectMapper();
-        startReloadStrategies();
 
         configurationCache.set(loadConfiguration());
+        startReloadStrategies();
     }
 
+    @Override
     public T get() {
         return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded).getConfiguration();
     }
 
-    public Config getConfig() {
-        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded).getTypeSafeConfig();
+    @Override
+    public <C> ConfigurationProvider<C> createConfigurationProvider(Function<T, C> configurationExtractor) {
+        return new ExtractedConfigurationProvider<>(this, configurationExtractor);
+    }
+
+    @Override
+    public void registerChangeListener(BiConsumer<T, T> listener) {
+        changeListenersNotifier.registerChangeListener(listener);
     }
 
     private ConfigHolder<T> buildConfigObjectIfNeeded(ConfigHolder<T> currentConfig) {
@@ -84,7 +94,7 @@ public class RootConfigurationProvider<T> extends ConfigurationProvider<T> imple
 
         T oldConfig = oldConfigHolder.getConfiguration();
         T newConfig = newConfigHolder.getConfiguration();
-        notifyListenersOnConfigChangeIfNeeded(oldConfig, newConfig);
+        changeListenersNotifier.notifyListenersOnConfigChangeIfNeeded(oldConfig, newConfig);
     }
 
     private ConfigHolder<T> loadConfiguration() {

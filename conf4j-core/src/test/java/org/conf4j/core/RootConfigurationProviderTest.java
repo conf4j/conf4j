@@ -2,9 +2,7 @@ package org.conf4j.core;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.conf4j.core.source.FilesystemConfigurationSource;
 import org.conf4j.core.source.WatchableConfigurationSource;
@@ -28,12 +26,6 @@ public class RootConfigurationProviderTest {
         RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
-
-        Config config = ConfigFactory.parseMap(ImmutableMap.of(
-                "libraryName", "conf4j", "numberOfDaysInWeek", 7
-        ));
-
-        assertThat(provider.getConfig()).isEqualTo(config);
 
         TestConfiguration testConfiguration = provider.get();
         assertThat(testConfiguration).isNotNull();
@@ -84,25 +76,21 @@ public class RootConfigurationProviderTest {
     public void testConfigurationReloadStrategy() throws IOException {
         File configFile = File.createTempFile(RandomStringUtils.randomAlphanumeric(12), ".conf");
 
-        LongAdder numOfCallsToChangeListenerWithOldConfig = new LongAdder();
         LongAdder numOfCallsToChangeListener = new LongAdder();
 
         AtomicReference<Runnable> reloadCallbackReference = new AtomicReference<>();
         ConfigurationProvider<TestConfiguration> provider = createConfigProviderWithReloadStrategy(configFile, reloadCallbackReference);
 
-        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListenerWithOldConfig.increment());
-        provider.registerChangeListener((newConfig) -> numOfCallsToChangeListener.increment());
+        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListener.increment());
 
         Runnable reloadCallback = reloadCallbackReference.get();
         assertThat(reloadCallback).isNotNull();
 
-        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(0);
         assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(0);
 
         writeConfigToConfigurationFile(configFile);
         reloadCallback.run();
 
-        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(1);
         assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(1);
     }
 
@@ -110,25 +98,21 @@ public class RootConfigurationProviderTest {
     public void testConfigurationReloadStrategyRegisteredFromWatchableConfigurationSource() throws IOException {
         File configFile = File.createTempFile(RandomStringUtils.randomAlphanumeric(12), ".conf");
 
-        LongAdder numOfCallsToChangeListenerWithOldConfig = new LongAdder();
         LongAdder numOfCallsToChangeListener = new LongAdder();
 
         AtomicReference<Runnable> reloadCallbackReference = new AtomicReference<>();
         ConfigurationProvider<TestConfiguration> provider = createConfigProviderWithWatchableConfigSource(configFile, reloadCallbackReference);
 
-        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListenerWithOldConfig.increment());
-        provider.registerChangeListener((newConfig) -> numOfCallsToChangeListener.increment());
+        provider.registerChangeListener((oldConfig, newConfig) -> numOfCallsToChangeListener.increment());
 
         Runnable reloadCallback = reloadCallbackReference.get();
         assertThat(reloadCallback).isNotNull();
 
-        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(0);
         assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(0);
 
         writeConfigToConfigurationFile(configFile);
         reloadCallback.run();
 
-        assertThat(numOfCallsToChangeListenerWithOldConfig.longValue()).isEqualTo(1);
         assertThat(numOfCallsToChangeListener.longValue()).isEqualTo(1);
     }
 
@@ -176,14 +160,6 @@ public class RootConfigurationProviderTest {
         RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
-
-        Config config = ConfigFactory.parseMap(ImmutableMap.of(
-                "calender", ImmutableMap.of("numberOfDaysInWeek", 7),
-                "libraryName", "conf4j",
-                "numberOfDaysInWeek", 7
-        ));
-
-        assertThat(provider.getConfig()).isEqualTo(config);
 
         TestConfiguration testConfiguration = provider.get();
         assertThat(testConfiguration).isNotNull();

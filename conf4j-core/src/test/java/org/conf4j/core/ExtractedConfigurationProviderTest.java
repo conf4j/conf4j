@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class SubConfigurationProviderTest {
+public class ExtractedConfigurationProviderTest {
 
     @Test
     public void testSubConfigurationProvider() {
@@ -27,7 +27,7 @@ public class SubConfigurationProviderTest {
         assertThat(actualRootConfig).isEqualToComparingFieldByFieldRecursively(expectedRootConfig);
 
         ConfigurationProvider<DatabaseConfiguration> subConfigurationProvider =
-                configurationProvider.getSubConfigurationProvider(configuration -> configuration.database);
+                configurationProvider.createConfigurationProvider(configuration -> configuration.database);
 
         assertThat(subConfigurationProvider).isNotNull();
 
