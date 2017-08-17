@@ -8,7 +8,7 @@
 ### Gradle
 
 ```groovy
-compile 'org.conf4j:conf4j-core:2017.8.1'
+compile 'org.conf4j:conf4j-core:2017.8.2'
 ```
 
 ### Maven
@@ -17,7 +17,7 @@ compile 'org.conf4j:conf4j-core:2017.8.1'
 <dependency>
   <groupId>org.conf4j</groupId>
   <artifactId>conf4j-core</artifactId>
-  <version>2017.8.1</version>
+  <version>2017.8.2</version>
 </dependency>
 ```
 
@@ -34,6 +34,7 @@ public class Main {
   public static void main(String[] args) throws Exception {
     ConsulFileConfigurationSource prodConfigSource = ConsulFileConfigurationSource.builder()
         .withConfigurationFilePath("prod/test-service.conf")
+        .withConsulUrl("localhost:8500")
         .reloadOnChange()
         .build();
 
