@@ -5,14 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.typesafe.config.Config;
 import org.conf4j.core.source.ConfigurationSource;
-import org.conf4j.core.source.MergeConfigurationSource;
-import org.conf4j.core.source.WatchableConfigurationSource;
 import org.conf4j.core.source.reload.ReloadStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
@@ -32,9 +28,9 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
     private final List<ReloadStrategy> reloadStrategies;
     private final AtomicReference<ConfigHolder<T>> configurationCache = new AtomicReference<>();
 
-    private RootConfigurationProvider(Class<? extends T> configurationClass,
-                                      ConfigurationSource configurationSource,
-                                      List<ReloadStrategy> reloadStrategies) {
+    RootConfigurationProvider(Class<? extends T> configurationClass,
+                              ConfigurationSource configurationSource,
+                              List<ReloadStrategy> reloadStrategies) {
         this.configurationClass = requireNonNull(configurationClass);
         this.configurationSource = requireNonNull(configurationSource);
         this.reloadStrategies = requireNonNull(reloadStrategies);
@@ -65,8 +61,8 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
         return loadConfiguration();
     }
 
-    public static <T> Builder<T> builder(Class<? extends T> configurationClass) {
-        return new Builder<>(configurationClass);
+    public static <T> ConfigurationProviderBuilder<T> builder(Class<? extends T> configurationClass) {
+        return new ConfigurationProviderBuilder<>(configurationClass);
     }
 
     @Override
@@ -117,69 +113,6 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     private void startReloadStrategies() {
         reloadStrategies.forEach(reloadStrategy -> reloadStrategy.start(this::reload));
-    }
-
-    public static class Builder<T> {
-
-        private Class<? extends T> configurationClass;
-        private ConfigurationSource configurationSource;
-        private List<ReloadStrategy> reloadStrategies;
-
-        private Builder(Class<? extends T> configurationClass) {
-            this.configurationClass = configurationClass;
-            this.reloadStrategies = new ArrayList<>();
-        }
-
-        public Builder<T> withConfigurationSource(ConfigurationSource configurationSource) {
-            this.configurationSource = configurationSource;
-            addReloadStrategyIfNeeded(configurationSource);
-            return this;
-        }
-
-        public Builder<T> withFallbacks(ConfigurationSource fallbackSource, ConfigurationSource... otherFallbacks) {
-            addFallbackAsMergeConfigurationSource(fallbackSource);
-            if (otherFallbacks != null) {
-                Arrays.stream(otherFallbacks).forEach(this::addFallbackAsMergeConfigurationSource);
-            }
-
-            return this;
-        }
-
-        public Builder<T> addFallback(ConfigurationSource fallbackSource) {
-            return withFallbacks(fallbackSource);
-        }
-
-        public Builder<T> addReloadStrategy(ReloadStrategy reloadStrategy) {
-            requireNonNull(reloadStrategy, "Reload strategy cannot be null");
-            reloadStrategies.add(reloadStrategy);
-            return this;
-        }
-
-        public RootConfigurationProvider<T> build() {
-            return new RootConfigurationProvider<>(configurationClass, configurationSource, reloadStrategies);
-        }
-
-        private void addFallbackAsMergeConfigurationSource(ConfigurationSource fallbackSource) {
-            this.configurationSource = MergeConfigurationSource.builder()
-                    .withSource(this.configurationSource)
-                    .withFallback(fallbackSource)
-                    .build();
-
-            addReloadStrategyIfNeeded(fallbackSource);
-        }
-
-        private void addReloadStrategyIfNeeded(ConfigurationSource fallbackSource) {
-            if (!WatchableConfigurationSource.class.isAssignableFrom(fallbackSource.getClass())) return;
-            WatchableConfigurationSource watchableConfigSource = (WatchableConfigurationSource) fallbackSource;
-            if (watchableConfigSource.shouldWatchForChange()) {
-                ReloadStrategy reloadStrategy = watchableConfigSource.getReloadStrategy();
-
-                logger.info("Registering reload strategy of type: {} from watchable configuration source",
-                        reloadStrategy.getClass().getSimpleName());
-                addReloadStrategy(reloadStrategy);
-            }
-        }
-
     }
 
 }

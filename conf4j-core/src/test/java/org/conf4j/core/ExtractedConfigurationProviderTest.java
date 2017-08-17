@@ -18,7 +18,7 @@ public class ExtractedConfigurationProviderTest {
                 .withResourcePath("org/conf4j/core/sub-configuration-test.conf")
                 .build();
 
-        ConfigurationProvider<TestConfiguration> configurationProvider = RootConfigurationProvider.builder(TestConfiguration.class)
+        ConfigurationProvider<TestConfiguration> configurationProvider = new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
 

@@ -23,7 +23,7 @@ public class RootConfigurationProviderTest {
     @Test
     public void testRootConfigurationProvider() {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
-        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+        ConfigurationProvider<TestConfiguration> provider = new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
 
@@ -39,7 +39,7 @@ public class RootConfigurationProviderTest {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
         FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
 
-        RootConfigurationProvider<TestConfigurationWithFallback> provider = RootConfigurationProvider.builder(TestConfigurationWithFallback.class)
+        ConfigurationProvider<TestConfigurationWithFallback> provider = new ConfigurationProviderBuilder<>(TestConfigurationWithFallback.class)
                 .withConfigurationSource(configurationSource)
                 .withFallbacks(fallbackSource)
                 .build();
@@ -57,7 +57,7 @@ public class RootConfigurationProviderTest {
         FilesystemConfigurationSource specificEnvironmentSource = createSourceWithFile("hierarchy/env.conf");
         FilesystemConfigurationSource commonSource = createSourceWithFile("hierarchy/common.conf");
 
-        RootConfigurationProvider<FallbackHierarchyConfiguration> provider = RootConfigurationProvider.builder(FallbackHierarchyConfiguration.class)
+        ConfigurationProvider<FallbackHierarchyConfiguration> provider = new ConfigurationProviderBuilder<>(FallbackHierarchyConfiguration.class)
                 .withConfigurationSource(specificServiceSource)
                 .addFallback(specificEnvironmentSource)
                 .addFallback(commonSource)
@@ -130,7 +130,7 @@ public class RootConfigurationProviderTest {
         };
 
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
-        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+        ConfigurationProvider<TestConfiguration> provider = new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .addReloadStrategy(testReloadStrategy)
                 .build();
@@ -145,7 +145,7 @@ public class RootConfigurationProviderTest {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("test-configuration.conf");
         FilesystemConfigurationSource fallbackSource = createSourceWithFile("defaults.conf");
 
-        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+        ConfigurationProvider<TestConfiguration> provider = new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .withFallbacks(fallbackSource)
                 .build();
@@ -157,7 +157,7 @@ public class RootConfigurationProviderTest {
     @Test
     public void testTypeSafeConfigObjectResolved() {
         FilesystemConfigurationSource configurationSource = createSourceWithFile("resolvable.conf");
-        RootConfigurationProvider<TestConfiguration> provider = RootConfigurationProvider.builder(TestConfiguration.class)
+        ConfigurationProvider<TestConfiguration> provider = new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
 
@@ -179,7 +179,7 @@ public class RootConfigurationProviderTest {
         FilesystemConfigurationSource configurationSource = FilesystemConfigurationSource.builder()
                 .withFilePath(configFile.getAbsolutePath())
                 .build();
-        return RootConfigurationProvider.builder(TestConfiguration.class)
+        return new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .addReloadStrategy(reloadCallbackReference::set)
                 .build();
@@ -213,7 +213,7 @@ public class RootConfigurationProviderTest {
             }
         };
 
-        return RootConfigurationProvider.builder(TestConfiguration.class)
+        return new ConfigurationProviderBuilder<>(TestConfiguration.class)
                 .withConfigurationSource(configurationSource)
                 .build();
     }
