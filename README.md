@@ -31,24 +31,24 @@ compile 'org.conf4j:conf4j-core:2017.8.1'
 
 ```java
 public class Main {
-    public static void main(String[] args) throws Exception {
-        ConsulFileConfigurationSource prodConfigSource = ConsulFileConfigurationSource.builder()
-            .withConfigurationFilePath("prod/test-service.conf")
-            .reloadOnChange()
-            .build();
+  public static void main(String[] args) throws Exception {
+    ConsulFileConfigurationSource prodConfigSource = ConsulFileConfigurationSource.builder()
+        .withConfigurationFilePath("prod/test-service.conf")
+        .reloadOnChange()
+        .build();
 
-        ClasspathConfigurationSource fallbackConfigSource = ClasspathConfigurationSource.builder()
-            .withResourcePath("fallback.conf")
-            .build();
+    ClasspathConfigurationSource fallbackConfigSource = ClasspathConfigurationSource.builder()
+        .withResourcePath("fallback.conf")
+        .build();
 
-        ConfigurationProvider<TestConfigBean> provider = new ConfigurationProviderBuilder<>(TestConfigBean.class)
-            .withConfigurationSource(prodConfigSource)
-            .addFallback(fallbackConfigSource)
-            .build();
+    ConfigurationProvider<TestConfigBean> provider = new ConfigurationProviderBuilder<>(TestConfigBean.class)
+        .withConfigurationSource(prodConfigSource)
+        .addFallback(fallbackConfigSource)
+        .build();
 
-        provider.registerChangeListener((oldConfig, newConfig) -> myListener(newConfig));
-        TestConfigBean config = provider.get();
-    }
+    provider.registerChangeListener((oldConfig, newConfig) -> myListener(newConfig));
+    TestConfigBean config = provider.get();
+  }
 }
 ```
 

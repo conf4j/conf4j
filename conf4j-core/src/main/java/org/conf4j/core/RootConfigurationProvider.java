@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -26,7 +27,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
     private final List<ReloadStrategy> reloadStrategies;
-    private final AtomicReference<ConfigHolder<T>> configurationCache = new AtomicReference<>();
+    private final AtomicReference<T> configurationCache = new AtomicReference<>();
 
     RootConfigurationProvider(Class<? extends T> configurationClass,
                               ConfigurationSource configurationSource,
@@ -43,7 +44,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     @Override
     public T get() {
-        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded).getConfiguration();
+        return configurationCache.updateAndGet(this::buildConfigObjectIfNeeded);
     }
 
     @Override
@@ -56,7 +57,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
         changeListenersNotifier.registerChangeListener(listener);
     }
 
-    private ConfigHolder<T> buildConfigObjectIfNeeded(ConfigHolder<T> currentConfig) {
+    private T buildConfigObjectIfNeeded(T currentConfig) {
         if (currentConfig != null) return currentConfig;
         return loadConfiguration();
     }
@@ -78,27 +79,23 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     private void reload() {
         configurationSource.reload();
-        ConfigHolder<T> oldConfigHolder = configurationCache.get();
-        ConfigHolder<T> newConfigHolder = loadConfiguration();
-        configurationCache.set(newConfigHolder);
+        T oldConfig = configurationCache.get();
+        T newConfig = loadConfiguration();
+        configurationCache.set(newConfig);
 
-        if (oldConfigHolder == null) return;
-        if (oldConfigHolder.getTypeSafeConfig().equals(newConfigHolder.getTypeSafeConfig())) {
+        if (Objects.equals(oldConfig, newConfig)) {
             logger.debug("Skipping notifying listeners about config reload, configurations are identical");
             return;
         }
 
-        T oldConfig = oldConfigHolder.getConfiguration();
-        T newConfig = newConfigHolder.getConfiguration();
         changeListenersNotifier.notifyListenersOnConfigChangeIfNeeded(oldConfig, newConfig);
     }
 
-    private ConfigHolder<T> loadConfiguration() {
+    private T loadConfiguration() {
         try {
             Config config = configurationSource.getConfig().resolve();
             Map<String, Object> configMap = config.root().unwrapped();
-            T configuration = mapper.convertValue(configMap, configurationClass);
-            return new ConfigHolder<>(config, configuration);
+            return mapper.convertValue(configMap, configurationClass);
         } catch (Exception e) {
             throw new IllegalStateException("Failed to create configuration object", e);
         }
