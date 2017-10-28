@@ -20,10 +20,12 @@ public class ConfigurationProviderBuilder<T> {
     private Class<? extends T> configurationClass;
     private ConfigurationSource configurationSource;
     private List<ReloadStrategy> reloadStrategies;
+    private String configRootPath;
 
     public ConfigurationProviderBuilder(Class<? extends T> configurationClass) {
         this.configurationClass = configurationClass;
         this.reloadStrategies = new ArrayList<>();
+        this.configRootPath = "";
     }
 
     public ConfigurationProviderBuilder<T> withConfigurationSource(ConfigurationSource configurationSource) {
@@ -41,6 +43,12 @@ public class ConfigurationProviderBuilder<T> {
         return this;
     }
 
+    public ConfigurationProviderBuilder<T> withConfigRootPath(String configRootPath) {
+        requireNonNull(configRootPath, "Config root path cannot be null");
+        this.configRootPath = configRootPath;
+        return this;
+    }
+
     public ConfigurationProviderBuilder<T> addFallback(ConfigurationSource fallbackSource) {
         return withFallbacks(fallbackSource);
     }
@@ -52,7 +60,7 @@ public class ConfigurationProviderBuilder<T> {
     }
 
     public ConfigurationProvider<T> build() {
-        return new RootConfigurationProvider<>(configurationClass, configurationSource, reloadStrategies);
+        return new RootConfigurationProvider<>(configurationClass, configurationSource, reloadStrategies, configRootPath);
     }
 
     private void addFallbackAsMergeConfigurationSource(ConfigurationSource fallbackSource) {

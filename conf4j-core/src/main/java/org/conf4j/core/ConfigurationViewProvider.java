@@ -5,13 +5,13 @@ import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
-public class ExtractedConfigurationProvider<R, T> implements ConfigurationProvider<T> {
+public class ConfigurationViewProvider<R, T> implements ConfigurationProvider<T> {
 
     private final ConfigurationProvider<R> parentConfigurationProvider;
     private final Function<R, T> configurationExtractor;
     private final ChangeListenersNotifier<T> changeListenersNotifier;
 
-    ExtractedConfigurationProvider(ConfigurationProvider<R> parentConfigurationProvider, Function<R, T> configurationExtractor) {
+    ConfigurationViewProvider(ConfigurationProvider<R> parentConfigurationProvider, Function<R, T> configurationExtractor) {
         this.parentConfigurationProvider = requireNonNull(parentConfigurationProvider);
         this.configurationExtractor = requireNonNull(configurationExtractor);
         this.changeListenersNotifier = new ChangeListenersNotifier<>();
@@ -26,7 +26,7 @@ public class ExtractedConfigurationProvider<R, T> implements ConfigurationProvid
 
     @Override
     public <C> ConfigurationProvider<C> createConfigurationProvider(Function<T, C> configurationExtractor) {
-        return new ExtractedConfigurationProvider<>(this, configurationExtractor);
+        return new ConfigurationViewProvider<>(this, configurationExtractor);
     }
 
     @Override

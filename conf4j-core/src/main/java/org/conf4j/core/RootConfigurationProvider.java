@@ -21,21 +21,25 @@ import static java.util.Objects.requireNonNull;
 public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     private static final Logger logger = LoggerFactory.getLogger(RootConfigurationProvider.class);
+    private static final String EMPTY_STRING = "";
+
+    private final ChangeListenersNotifier<T> changeListenersNotifier = new ChangeListenersNotifier<>();
+    private final AtomicReference<T> configurationCache = new AtomicReference<>();
 
     private final ObjectMapper mapper;
-    private final ChangeListenersNotifier<T> changeListenersNotifier;
     private final Class<? extends T> configurationClass;
     private final ConfigurationSource configurationSource;
     private final List<ReloadStrategy> reloadStrategies;
-    private final AtomicReference<T> configurationCache = new AtomicReference<>();
+    private final String configRootPath;
 
     RootConfigurationProvider(Class<? extends T> configurationClass,
                               ConfigurationSource configurationSource,
-                              List<ReloadStrategy> reloadStrategies) {
+                              List<ReloadStrategy> reloadStrategies,
+                              String configRootPath) {
         this.configurationClass = requireNonNull(configurationClass);
         this.configurationSource = requireNonNull(configurationSource);
         this.reloadStrategies = requireNonNull(reloadStrategies);
-        this.changeListenersNotifier = new ChangeListenersNotifier<>();
+        this.configRootPath = requireNonNull(configRootPath);
         this.mapper = createObjectMapper();
 
         configurationCache.set(loadConfiguration());
@@ -49,7 +53,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
 
     @Override
     public <C> ConfigurationProvider<C> createConfigurationProvider(Function<T, C> configurationExtractor) {
-        return new ExtractedConfigurationProvider<>(this, configurationExtractor);
+        return new ConfigurationViewProvider<>(this, configurationExtractor);
     }
 
     @Override
@@ -94,6 +98,10 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
     private T loadConfiguration() {
         try {
             Config config = configurationSource.getConfig().resolve();
+            if (!configRootPath.equals(EMPTY_STRING)) {
+                config = config.getConfig(configRootPath);
+            }
+
             Map<String, Object> configMap = config.root().unwrapped();
             return mapper.convertValue(configMap, configurationClass);
         } catch (Exception e) {

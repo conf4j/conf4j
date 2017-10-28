@@ -168,6 +168,25 @@ public class RootConfigurationProviderTest {
         assertThat(testConfiguration).isEqualToComparingFieldByField(expectedConfiguration);
     }
 
+    @Test
+    public void testConfigRootSetting() {
+        FilesystemConfigurationSource source = createSourceWithFile("config-root-path.conf");
+        ConfigurationProvider<TestConfiguration> providerWithoutConfigRoot = new ConfigurationProviderBuilder<>(TestConfiguration.class)
+                .withConfigurationSource(source)
+                .build();
+
+        TestConfiguration emptyConfig = new TestConfiguration(null, 0);
+        assertThat(providerWithoutConfigRoot.get()).isEqualToComparingFieldByField(emptyConfig);
+
+        ConfigurationProvider<TestConfiguration> providerWithConfigRoot = new ConfigurationProviderBuilder<>(TestConfiguration.class)
+                .withConfigurationSource(source)
+                .withConfigRootPath("project.subProject")
+                .build();
+
+        TestConfiguration expectedConfig = new TestConfiguration("config-root-path-test", 7);
+        assertThat(providerWithConfigRoot.get()).isEqualToComparingFieldByField(expectedConfig);
+    }
+
     private FilesystemConfigurationSource createSourceWithFile(String filePath) {
         return FilesystemConfigurationSource.builder()
                 .withFilePath(getClass().getResource(filePath).getFile())

@@ -7,7 +7,7 @@ import org.junit.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-public class ExtractedConfigurationProviderTest {
+public class ConfigurationViewProviderTest {
 
     @Test
     public void testSubConfigurationProvider() {
