@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.typesafe.config.Config;
+import org.conf4j.core.ext.ConfigurationExtensions;
 import org.conf4j.core.source.ConfigurationSource;
 import org.conf4j.core.source.reload.ReloadStrategy;
 import org.slf4j.Logger;
@@ -24,6 +25,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
     private static final String EMPTY_STRING = "";
 
     private final ChangeListenersNotifier<T> changeListenersNotifier = new ChangeListenersNotifier<>();
+    private final ConfigurationExtensions configurationExtensions = new ConfigurationExtensions();
     private final AtomicReference<T> configurationCache = new AtomicReference<>();
 
     private final ObjectMapper mapper;
@@ -79,6 +81,7 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
                 logger.warn("Unknown error while stopping reload strategy of type: {}", reloadStrategy.getClass(), t);
             }
         });
+        configurationExtensions.closeExtentions();
     }
 
     private void reload() {
@@ -96,17 +99,17 @@ public class RootConfigurationProvider<T> implements ConfigurationProvider<T> {
     }
 
     private T loadConfiguration() {
-        try {
-            Config config = configurationSource.getConfig().resolve();
-            if (!configRootPath.equals(EMPTY_STRING)) {
-                config = config.getConfig(configRootPath);
-            }
-
-            Map<String, Object> configMap = config.root().unwrapped();
-            return mapper.convertValue(configMap, configurationClass);
-        } catch (Exception e) {
-            throw new IllegalStateException("Failed to create configuration object", e);
+        Config config = configurationSource.getConfig().resolve();
+        if (!configRootPath.equals(EMPTY_STRING)) {
+            config = config.getConfig(configRootPath);
         }
+
+        configurationExtensions.beforeTypeConversion(config, configurationClass);
+        Map<String, Object> configMap = config.root().unwrapped();
+        T configurationBean = mapper.convertValue(configMap, configurationClass);
+        configurationExtensions.afterConfigBeanAssembly(configurationBean);
+
+        return configurationBean;
     }
 
     private ObjectMapper createObjectMapper() {

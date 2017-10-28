@@ -27,5 +27,10 @@
             <artifactId>conf4j-etcd</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.conf4j</groupId>
+            <artifactId>ext-bean-validation</artifactId>
+            <version>${project.version}</version>
+        </dependency>
     </dependencies>
 </project>
