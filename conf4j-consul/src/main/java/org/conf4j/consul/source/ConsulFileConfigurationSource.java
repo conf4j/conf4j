@@ -83,7 +83,7 @@ public class ConsulFileConfigurationSource implements WatchableConfigurationSour
     private Config buildConfigIfAbsent(Config currentConfig) {
         if (currentConfig != null) return currentConfig;
 
-        Optional<String> configurationFile = kvClient.getValueAsString(configurationFilePath).toJavaUtil();
+        Optional<String> configurationFile = kvClient.getValueAsString(configurationFilePath);
         if (configurationFile.isPresent()) {
             return ConfigFactory.parseString(configurationFile.get());
         }
